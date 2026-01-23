@@ -90,8 +90,9 @@ async function playRobcoBoot() {
 
   await sleep(300);
 
+  // 🔥 ASCII SPEED FIX: much faster typing
   for (const line of robcoAsciiArt) {
-    await typeLine(line, 1);
+    await typeLine(line, 0); // almost instant per character
   }
 
   await sleep(300);
@@ -130,7 +131,7 @@ function startLinuxBoot() {
 
 function connectBackend() {
   term.writeln("Connecting to secure shell...");
-  socket = new WebSocket("ws://localhost:9080");
+  socket = new WebSocket("ws://192.168.0.145:9080");
 
   socket.binaryType = "arraybuffer";
 
@@ -166,15 +167,17 @@ function connectBackend() {
 
 async function playShutdownSequence() {
   if (stage === "shutdown") return;
+
   term.clear();
   stage = "shutdown";
-  
+
   for (const line of shutdownLines) {
     await typeLine(line, 20);
   }
 
   // hide cursor (feels powered off)
   term.write("\x1b[?25l");
+
   document
     .getElementById("pipboy-screen")
     .classList.add("power-off");
@@ -210,13 +213,26 @@ term.onData(data => {
     }
   }
 
-  if (code === 127) {
-    if (inputBuffer.length > 0) {
-      inputBuffer = inputBuffer.slice(0, -1);
-      term.write("\b \b");
-    }
+  // if (code === 127) {
+  //   if (inputBuffer.length > 0) {
+  //     inputBuffer = inputBuffer.slice(0, -1);
+  //     term.write("\b \b");
+  //   }
+  //   return;
+  // }
+if (code === 127) {
+  if (stage === "connected") {
+    socket.send(data); // let bash handle it
     return;
   }
+
+  // firmware mode only
+  if (inputBuffer.length > 0) {
+    inputBuffer = inputBuffer.slice(0, -1);
+    term.write("\b \b");
+  }
+  return;
+}
 
   if (stage === "wait_start") {
     inputBuffer += data;
@@ -224,10 +240,14 @@ term.onData(data => {
     return;
   }
 
+  // if (stage === "connected") {
+  //   inputBuffer += data;
+  //   socket.send(data);
+  // }
   if (stage === "connected") {
-    inputBuffer += data;
-    socket.send(data);
-  }
+  socket.send(data);
+}
+
 });
 
 // ---------------- START ----------------
