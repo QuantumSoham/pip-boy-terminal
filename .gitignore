@@ -1,0 +1,65 @@
+############################
+# Node.js
+############################
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+############################
+# Frontend build / serve
+############################
+dist/
+build/
+.cache/
+
+############################
+# Docker
+############################
+*.tar
+*.log
+docker-data/
+volumes/
+tmp/
+
+############################
+# Environment variables
+############################
+.env
+.env.local
+.env.*.local
+
+############################
+# OS / Editor junk
+############################
+.DS_Store
+Thumbs.db
+
+############################
+# Windows specific
+############################
+desktop.ini
+*.lnk
+
+############################
+# IDEs
+############################
+.vscode/
+.idea/
+*.iml
+
+############################
+# Terminal / runtime
+############################
+*.pid
+*.seed
+*.swp
+*.swo
+
+############################
+# Custom project ignores
+############################
+pip-boy-frontend/sounds/
+pip-boy-backend/docker-volumes/
+/.vscode/
+/pip-boy-react-test/
