@@ -14,17 +14,23 @@ term.open(document.getElementById("terminal"));
 
 // ---------------- STATE ----------------
 
-let stage = "robco"; // robco → wait_start → linux → connected
+// robco → wait_start → linux → connected → shutdown
+let stage = "robco";
 let inputBuffer = "";
 let socket;
 
 // ---------------- ROBCO BOOT DATA ----------------
 
 const messagesBeforeRobco = [
-  "Initializing boot...",
-  "Loading RobCo Unified OS...",
-  "64K RAM detected...",
-  "Launching Interface...",
+  "*************** PIP-OS(R) V7.1.0.8 ***************",
+  "",
+  "COPYRIGHT 2075 ROBCO(R)",
+  "LOADER V1.1",
+  "EXEC VERSION 41.10",
+  "64K RAM SYSTEM",
+  "38911 BYTES FREE",
+  "NO HOLOTAPE FOUND",
+  "LOAD ROM(1): DEITRIX 303",
   ""
 ];
 
@@ -45,32 +51,53 @@ const messagesAfterRobco = [
   ""
 ];
 
+// ---------------- SHUTDOWN DATA ----------------
+
+const shutdownLines = [
+  "",
+  "Saving system state...",
+  "Flushing memory buffers...",
+  "Powering down RobCo Unified OS...",
+  "",
+  "SYSTEM HALTED"
+];
+
 // ---------------- UTILS ----------------
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+async function typeLine(text, baseSpeed = 25) {
+  for (const char of text) {
+    term.write(char);
+    await sleep(baseSpeed + Math.random() * 20);
+  }
+  term.write("\r\n");
+}
+
 // ---------------- ROBCO BOOT SEQUENCE ----------------
 
 async function playRobcoBoot() {
   for (const line of messagesBeforeRobco) {
-    term.writeln(line);
-    await sleep(120);
+    if (line === "") {
+      term.writeln("");
+      await sleep(50);
+    } else {
+      await typeLine(line, 5);
+    }
   }
 
   await sleep(300);
 
   for (const line of robcoAsciiArt) {
-    term.writeln(line);
-    await sleep(60);
+    await typeLine(line, 1);
   }
 
   await sleep(300);
 
   for (const line of messagesAfterRobco) {
-    term.writeln(line);
-    await sleep(80);
+    await typeLine(line, 18);
   }
 
   stage = "wait_start";
@@ -91,14 +118,12 @@ function startLinuxBoot() {
     ""
   ];
 
-  let i = 0;
-  const boot = setInterval(() => {
-    term.writeln(bootLines[i++]);
-    if (i === bootLines.length) {
-      clearInterval(boot);
-      connectBackend();
+  (async () => {
+    for (const line of bootLines) {
+      await typeLine(line, 10);
     }
-  }, 80);
+    connectBackend();
+  })();
 }
 
 // ---------------- BACKEND CONNECTION ----------------
@@ -115,20 +140,54 @@ function connectBackend() {
   };
 
   socket.onmessage = e => {
+    // --- CONTROL MESSAGE HANDLING ---
+    try {
+      const msg = JSON.parse(e.data);
+
+      if (msg.type === "SYSTEM_SHUTDOWN") {
+        playShutdownSequence();
+        return;
+      }
+    } catch {
+      // not JSON → normal terminal output
+    }
+
     term.write(new TextDecoder().decode(e.data));
   };
 
   socket.onclose = () => {
-    term.writeln("\r\n[ CONNECTION CLOSED ]");
+    if (stage === "connected") {
+      playShutdownSequence();
+    }
   };
+}
+
+// ---------------- SHUTDOWN SEQUENCE ----------------
+
+async function playShutdownSequence() {
+  if (stage === "shutdown") return;
+  term.clear();
+  stage = "shutdown";
+  
+  for (const line of shutdownLines) {
+    await typeLine(line, 20);
+  }
+
+  // hide cursor (feels powered off)
+  term.write("\x1b[?25l");
+  document
+    .getElementById("pipboy-screen")
+    .classList.add("power-off");
 }
 
 // ---------------- INPUT HANDLING ----------------
 
 term.onData(data => {
+  // no input once powered off
+  if (stage === "shutdown") return;
+
   const code = data.charCodeAt(0);
 
-  // ENTER
   if (code === 13) {
     term.writeln("");
 
@@ -146,12 +205,11 @@ term.onData(data => {
 
     if (stage === "connected") {
       socket.send("\r");
+      inputBuffer = "";
       return;
     }
-    
   }
 
-  // BACKSPACE
   if (code === 127) {
     if (inputBuffer.length > 0) {
       inputBuffer = inputBuffer.slice(0, -1);
@@ -160,15 +218,14 @@ term.onData(data => {
     return;
   }
 
-  // TYPING BEFORE BACKEND
   if (stage === "wait_start") {
     inputBuffer += data;
     term.write(data);
     return;
   }
 
-  // NORMAL TERMINAL MODE
   if (stage === "connected") {
+    inputBuffer += data;
     socket.send(data);
   }
 });
@@ -176,60 +233,3 @@ term.onData(data => {
 // ---------------- START ----------------
 
 playRobcoBoot();
-
-// const term = new Terminal({
-//   cursorBlink: true,
-//   fontSize: 15,
-//   theme: {
-//     background: "#050f0a",
-//     foreground: "#33ff66",
-//     cursor: "#66ff99"
-//   }
-// });
-
-// term.open(document.getElementById("terminal"));
-
-// /* ---------- BOOT SEQUENCE ---------- */
-
-// const bootLines = [
-//   "[    0.000000] Linux version 6.1.0-pipboy",
-//   "[    0.231991] Initializing kernel modules",
-//   "[    0.611902] Radiation sensors online",
-//   "[    1.021889] EXT4-fs mounted",
-//   "[    1.467220] Starting terminal services",
-//   ""
-// ];
-
-// let i = 0;
-// const boot = setInterval(() => {
-//   term.writeln(bootLines[i++]);
-//   if (i === bootLines.length) {
-//     clearInterval(boot);
-//     connectBackend();
-//   }
-// }, 80);
-
-// /* ---------- CONNECT DOCKER ---------- */
-
-// function connectBackend() {
-//   term.writeln("Connecting to secure shell...");
-//   const socket = new WebSocket("ws://localhost:9080");
-
-//   socket.binaryType = "arraybuffer";
-
-//   socket.onopen = () => {
-//     term.writeln("Connected. Welcome to Ubuntu.");
-//   };
-
-//   socket.onmessage = e => {
-//     term.write(new TextDecoder().decode(e.data));
-//   };
-
-//   term.onData(data => {
-//     socket.send(data);
-//   });
-
-//   socket.onclose = () => {
-//     term.writeln("\r\n[ CONNECTION CLOSED ]");
-//   };
-// }
