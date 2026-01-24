@@ -14,11 +14,13 @@ wss.on("connection", async ws => {
 
   try {
     container = await docker.createContainer({
-      Image: "ubuntu:22.04",
+      Image: "dev-ubuntu:1.0",
       Cmd: ["/bin/bash"],
+      User:"dev",
       Tty: true,
       OpenStdin: true,
       StdinOnce: false,
+      WorkingDir:"/home/dev",
       HostConfig: {
         AutoRemove: true
       }
