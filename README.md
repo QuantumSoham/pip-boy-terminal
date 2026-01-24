@@ -26,6 +26,17 @@ In this universe, **RobCo Industries** emerged as a dominant force in computing 
 This project simulates such a terminal, not as a static UI, but as a **living system** backed by real Linux containers.
 
 ---
+## How to set up this project?
+1. Docker is really necessary for this project , it will spin up your containers which will host your Linux OS
+2. Install and open docker
+3. git clone this repository
+4. go to frontend and change the websocket link with ur localhost
+5. in both the frontend and backend do npm install and node will install the necessary packages to run your project
+6. click on start-pipboy.bat to automatically start the backend and frontend if you are on a windows machine.
+
+OR
+
+7. You can individually start frontend and backend using node.
 
 ## What This Project Is
 
