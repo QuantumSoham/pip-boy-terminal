@@ -131,7 +131,7 @@ function startLinuxBoot() {
 
 function connectBackend() {
   term.writeln("Connecting to secure shell...");
-  socket = new WebSocket("ws://192.168.0.145:9080");
+  socket = new WebSocket("ws://localhost:9080");
 
   socket.binaryType = "arraybuffer";
 
