@@ -5,6 +5,7 @@
 A browser-based Linux terminal simulator inspired by the **Fallout universe**, streaming real Docker-based Linux environments into the browser through a retro-futuristic Pip-Boy interface.
 
 This project combines **real containerized Linux systems** with a **fictional computing aesthetic**, blending practical infrastructure with immersive design.
+
  
 ---
 ![Pip-Boy Demo](assets/fallout-pipboy.gif)
